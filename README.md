@@ -4,6 +4,17 @@
 
 ---
 
+## 🔗 Accesos rápidos (para los jurados)
+
+| | Link |
+|---|---|
+| 🖥️ **Probar la APP EN VIVO** (entrá como si fueras el técnico de soporte) | **https://security-affair-untrimmed.ngrok-free.dev** |
+| 📦 **Código y documentación** (este repositorio) | https://github.com/bookcubers2-ux/soluno-bancosol |
+
+> ℹ️ Al abrir la app en vivo, el navegador muestra **una vez** un aviso de ngrok: hacé clic en el botón **"Visit Site"** y entrás a la consola. *(La demo en vivo está disponible durante el período de evaluación, mientras el equipo mantiene el entorno activo.)*
+
+---
+
 ## 🎯 El problema
 
 BancoSol recibe un alto volumen de mensajes de clientes por WhatsApp. Hoy se mezclan:
