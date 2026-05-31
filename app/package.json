@@ -1,0 +1,10 @@
+{
+  "name": "soluno-app",
+  "version": "1.0.0",
+  "description": "SolUno - Frontend + Backend (conecta con n8n) para BancoSol",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "license": "MIT"
+}

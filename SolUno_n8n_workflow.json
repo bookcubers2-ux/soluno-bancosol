@@ -1,0 +1,101 @@
+{
+  "id": "soluno-wf-001",
+  "name": "SolUno - Ingesta y Clasificacion (v1 reglas)",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "soluno-reporte",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "node-webhook",
+      "name": "1. Webhook (Ingesta)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "soluno-reporte"
+    },
+    {
+      "parameters": {
+        "jsCode": "// === 2. TOKENIZACION (on-premise) ===\n// Reemplaza PII por tokens ANTES de cualquier IA.\n// Oculta lo irrelevante; conserva nombre+CI solo para el revisor interno.\nconst body = $input.item.json.body || $input.item.json;\nconst cliente = body.cliente || {};\nlet texto = (body.mensaje || '').toString();\nconst mapa = {};\n\nfunction tokenizar(valor, prefijo) {\n  if (!valor) return;\n  const token = '{' + prefijo + '_001}';\n  mapa[token] = valor;\n  if (texto.includes(valor)) texto = texto.split(valor).join(token);\n}\n\n// PII tokenizada (no va a la IA en claro)\ntokenizar(cliente.nombre, 'NAME');\ntokenizar(cliente.ci, 'CI');\ntokenizar(cliente.cuenta, 'ACCT');\ntokenizar(cliente.telefono, 'PHONE');\n\nreturn {\n  json: {\n    canal: body.canal || 'desconocido',\n    producto: body.producto || '',\n    agencia: body.agencia || '',\n    mensaje_original: body.mensaje || '',\n    texto_tokenizado: texto,\n    mapa_tokens: mapa,\n    // El revisor interno solo necesita esto (segun el banco):\n    cliente_visible: { nombre: cliente.nombre || null, ci: cliente.ci || null }\n  }\n};"
+      },
+      "id": "node-tokenizar",
+      "name": "2. Tokenizar (PII)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// === 3. CLASIFICACION POR REGLAS ===\n// (Luego se reemplaza por una llamada a Claude para entender el contexto.)\nconst j = $input.item.json;\nconst t = (j.texto_tokenizado || '').toLowerCase();\n\n// Producto (capa por canal/producto)\nlet producto = j.producto || 'desconocido';\nif (t.includes('altoke') || t.includes('qr')) producto = 'altoke';\nelse if (t.includes('appsol')) producto = 'appSol';\nelse if (t.includes('solnet')) producto = 'Solnet';\n\nlet tipo = 'queja';\nlet severidad = 'baja';\nlet categoria = 'general';\n\n// --- PASO 1: QUEJAS CONOCIDAS (tienen prioridad; son casos del playbook) ---\n// El banco las definio como bajo impacto con solucion operativa conocida.\nconst quejasConocidas = [\n  { patron: ['cambie de celular','cambié de celular','cambie de dispositivo','cambié de dispositivo','nuevo celular','nuevo dispositivo','cambie mi telefono'], categoria: 'acceso' },\n  { patron: ['escanear','carnet','extranjero','re-escanear','volver a escanear'], categoria: 'acceso' },\n  { patron: ['sigue saliendo la deuda','sigue la deuda','no me han devuelto','ya pague','ya pagué','pague y sigue','pagué y sigue'], categoria: 'transacciones' }\n];\nlet esQuejaConocida = false;\nfor (const q of quejasConocidas) {\n  if (q.patron.some(p => t.includes(p))) { esQuejaConocida = true; categoria = q.categoria; break; }\n}\n\nif (!esQuejaConocida) {\n  // --- PASO 2: INCIDENTE (falla generalizada de funcion critica) ---\n  const senalesIncidente = [\n    'no puedo entrar','no puedo iniciar','no inicia','no carga','no funciona',\n    'caido','caida','caída','no puedo transferir','no me deja transferir','qr no',\n    'no procesa','error general','se cae','app caida','no puedo acceder','no anda','nadie puede'\n  ];\n  const criticas = ['login','iniciar sesion','iniciar sesión','transferencia','transferir','qr','ach'];\n  if (senalesIncidente.some(k => t.includes(k))) { tipo = 'incidente'; severidad = 'alta'; }\n  if (criticas.some(k => t.includes(k)) && (t.includes('no ') || t.includes('error') || t.includes('falla'))) { tipo = 'incidente'; severidad = 'alta'; }\n\n  // categoria operativa (del Excel de categorizacion)\n  if (t.includes('transfer') || t.includes('pago') || t.includes('qr')) categoria = 'transacciones';\n  else if (t.includes('iniciar') || t.includes('login') || t.includes('entrar') || t.includes('sesion') || t.includes('acceso')) categoria = 'acceso';\n  else if (t.includes('lento') || t.includes('demora') || t.includes('timeout')) categoria = 'rendimiento';\n  else if (t.includes('saldo') || t.includes('movimiento') || t.includes('comprobante')) categoria = 'datos';\n}\n\nreturn { json: { ...j, tipo, severidad, producto, categoria } };"
+      },
+      "id": "node-clasificar",
+      "name": "3. Clasificar (reglas)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "loose" },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-incidente",
+              "leftValue": "={{ $json.tipo }}",
+              "rightValue": "incidente",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-if",
+      "name": "4. ¿Es Incidente?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// === 5a. CAMINO INCIDENTE: armar Paquete de Incidente ===\nconst j = $input.item.json;\nconst id = 'INC-' + Date.now().toString().slice(-5);\nconst equipo = j.producto === 'altoke' ? 'Equipo Pagos/QR' : (j.producto === 'appSol' ? 'DevOps appSol' : 'DevOps');\n\nreturn { json: {\n  resultado: 'INCIDENTE',\n  caso_id: id,\n  paquete_para_desarrollo: {\n    que_falla: j.categoria + ' en ' + j.producto,\n    producto: j.producto,\n    severidad: j.severidad,\n    afectados: 1,                         // se incrementa al agrupar casos iguales\n    datos_para_reproducir: {\n      canal: j.canal,\n      producto: j.producto,\n      agencia: j.agencia,\n      texto_tokenizado: j.texto_tokenizado\n    },\n    equipo_asignado: equipo,\n    estado: 'En análisis'\n  },\n  respuesta_cliente: 'Recibimos tu reporte. Lo vinculamos al incidente ' + id + '. Estamos trabajando en ello y te avisaremos por este mismo canal. Estado: En análisis.'\n} };"
+      },
+      "id": "node-incidente",
+      "name": "5a. Paquete de Incidente",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1140, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "// === 5b. CAMINO QUEJA: respuesta desde Playbook Vivo ===\n// (Playbook embebido para el demo; luego sale de la base versionada.)\nconst j = $input.item.json;\nconst playbook = {\n  acceso: {\n    pasos: ['1. Cierra y vuelve a abrir la app', '2. Si cambiaste de dispositivo, reactiva tus tokens', '3. Si persiste, vuelve a escanear tu carnet'],\n    respuesta: 'Para resolver tu acceso: reactiva tus tokens o vuelve a escanear tu carnet siguiendo los pasos. Si continúa, escríbenos.'\n  },\n  transacciones: {\n    pasos: ['1. Verifica tu comprobante', '2. Espera el transcurso del día (conciliación)', '3. Si no se refleja, te contactamos'],\n    respuesta: 'Tu operación está en proceso. Por favor espera el transcurso del día; se reflejará tras la conciliación.'\n  },\n  rendimiento: {\n    pasos: ['1. Revisa tu conexión a internet', '2. Cierra otras apps', '3. Actualiza la app a la última versión'],\n    respuesta: 'Puede ser un tema de conexión o versión. Sigue los pasos; si continúa, avísanos.'\n  },\n  datos: {\n    pasos: ['1. Refresca la pantalla', '2. Espera unos minutos por actualización', '3. Si no aparece, te ayudamos'],\n    respuesta: 'Tu información puede tardar en actualizarse. Refresca la pantalla; si no aparece, escríbenos.'\n  },\n  general: {\n    pasos: ['1. Revisa tu conexión', '2. Actualiza la app'],\n    respuesta: 'Gracias por tu consulta. Sigue los pasos indicados; si continúa, escríbenos.'\n  }\n};\nconst pb = playbook[j.categoria] || playbook.general;\nconst id = 'QJA-' + Date.now().toString().slice(-5);\n\nreturn { json: {\n  resultado: 'QUEJA',\n  caso_id: id,\n  producto: j.producto,\n  categoria: j.categoria,\n  playbook_version: 'v1',\n  canal: j.canal,\n  respuesta_cliente: pb.respuesta,   // MISMA respuesta en todos los canales\n  pasos: pb.pasos,\n  estado: 'Resuelto (autoservicio)'\n} };"
+      },
+      "id": "node-queja",
+      "name": "5b. Respuesta Queja (Playbook)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1140, 400]
+    },
+    {
+      "parameters": { "options": {} },
+      "id": "node-respond",
+      "name": "6. Responder",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1380, 300]
+    }
+  ],
+  "connections": {
+    "1. Webhook (Ingesta)": { "main": [[{ "node": "2. Tokenizar (PII)", "type": "main", "index": 0 }]] },
+    "2. Tokenizar (PII)": { "main": [[{ "node": "3. Clasificar (reglas)", "type": "main", "index": 0 }]] },
+    "3. Clasificar (reglas)": { "main": [[{ "node": "4. ¿Es Incidente?", "type": "main", "index": 0 }]] },
+    "4. ¿Es Incidente?": { "main": [[{ "node": "5a. Paquete de Incidente", "type": "main", "index": 0 }], [{ "node": "5b. Respuesta Queja (Playbook)", "type": "main", "index": 0 }]] },
+    "5a. Paquete de Incidente": { "main": [[{ "node": "6. Responder", "type": "main", "index": 0 }]] },
+    "5b. Respuesta Queja (Playbook)": { "main": [[{ "node": "6. Responder", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "pinData": {}
+}

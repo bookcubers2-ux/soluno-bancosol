@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SolUno — Un punto. Una respuesta. Todos los canales.</title>
+<style>
+  :root{
+    --indigo:#1e2a78;
+    --indigo-dark:#16205c;
+    --indigo-soft:#2c3a9a;
+    --sol:#f5a623;
+    --sol-dark:#e0930f;
+    --green:#1f9d63;
+    --green-soft:#e7f7ee;
+    --red:#d64541;
+    --red-soft:#fdecec;
+    --bg:#f4f6fb;
+    --card:#ffffff;
+    --text:#1c2230;
+    --muted:#6b7280;
+    --border:#e6e9f2;
+    --shadow:0 6px 24px rgba(30,42,120,.08);
+    --shadow-soft:0 2px 10px rgba(30,42,120,.06);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    line-height:1.5;
+  }
+
+  /* ---------- HEADER ---------- */
+  header{
+    background:linear-gradient(135deg,var(--indigo) 0%,var(--indigo-dark) 100%);
+    color:#fff;
+    padding:22px 28px;
+    box-shadow:var(--shadow);
+    position:relative;
+    overflow:hidden;
+  }
+  header .brand{display:flex;align-items:center;gap:16px;}
+  .sol-mark{
+    width:46px;height:46px;flex:0 0 46px;
+    border-radius:50%;
+    background:radial-gradient(circle at 50% 50%,var(--sol) 0%,var(--sol-dark) 100%);
+    position:relative;
+    box-shadow:0 0 0 6px rgba(245,166,35,.18);
+  }
+  .sol-mark::before{
+    content:"";position:absolute;inset:0;border-radius:50%;
+    background:
+      conic-gradient(from 0deg,
+        transparent 0 8%, rgba(255,255,255,.55) 8% 10%, transparent 10% 25%,
+        rgba(255,255,255,.55) 25% 27%, transparent 27% 42%,
+        rgba(255,255,255,.55) 42% 44%, transparent 44% 58%,
+        rgba(255,255,255,.55) 58% 60%, transparent 60% 75%,
+        rgba(255,255,255,.55) 75% 77%, transparent 77% 92%,
+        rgba(255,255,255,.55) 92% 94%, transparent 94% 100%);
+    -webkit-mask:radial-gradient(circle,transparent 52%,#000 54%);
+            mask:radial-gradient(circle,transparent 52%,#000 54%);
+  }
+  .brand h1{margin:0;font-size:26px;letter-spacing:.5px;font-weight:800;}
+  .brand h1 span{color:var(--sol);}
+  .brand .tagline{margin:0;font-size:13px;opacity:.85;font-weight:500;letter-spacing:.3px;}
+  header .sub{margin-top:2px;font-size:11px;opacity:.6;letter-spacing:.5px;text-transform:uppercase;}
+
+  /* ---------- TABS ---------- */
+  .tabs{
+    display:flex;gap:6px;
+    padding:0 28px;
+    background:var(--indigo-dark);
+  }
+  .tab-btn{
+    background:transparent;border:none;color:rgba(255,255,255,.7);
+    padding:13px 22px;font-size:14px;font-weight:600;cursor:pointer;
+    border-bottom:3px solid transparent;font-family:inherit;
+    transition:.18s;display:flex;align-items:center;gap:8px;
+  }
+  .tab-btn:hover{color:#fff;}
+  .tab-btn.active{color:#fff;border-bottom-color:var(--sol);}
+  .tab-btn .ico{font-size:16px;}
+
+  main{max-width:1180px;margin:0 auto;padding:28px;}
+  .view{display:none;animation:fade .25s ease;}
+  .view.active{display:block;}
+  @keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+
+  /* ---------- CARDS / GENERIC ---------- */
+  .card{
+    background:var(--card);border:1px solid var(--border);border-radius:16px;
+    box-shadow:var(--shadow-soft);padding:24px;
+  }
+  .card h2{margin:0 0 4px;font-size:19px;color:var(--indigo);}
+  .card .hint{margin:0 0 18px;color:var(--muted);font-size:13px;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;}
+  @media(max-width:840px){.grid2{grid-template-columns:1fr;}}
+
+  label{display:block;font-size:13px;font-weight:600;margin:0 0 6px;color:#374151;}
+  .field{margin-bottom:16px;}
+  select,input,textarea{
+    width:100%;padding:11px 13px;border:1px solid var(--border);border-radius:10px;
+    font-family:inherit;font-size:14px;background:#fbfcfe;color:var(--text);transition:.15s;
+  }
+  select:focus,input:focus,textarea:focus{
+    outline:none;border-color:var(--indigo-soft);background:#fff;
+    box-shadow:0 0 0 3px rgba(44,58,154,.12);
+  }
+  textarea{resize:vertical;min-height:90px;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+
+  .btn{
+    background:linear-gradient(135deg,var(--sol) 0%,var(--sol-dark) 100%);
+    color:#3a2a00;border:none;border-radius:11px;padding:13px 20px;
+    font-size:15px;font-weight:700;cursor:pointer;width:100%;font-family:inherit;
+    box-shadow:0 4px 14px rgba(245,166,35,.35);transition:.15s;letter-spacing:.3px;
+  }
+  .btn:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(245,166,35,.45);}
+  .btn:active{transform:translateY(0);}
+  .btn:disabled{opacity:.6;cursor:wait;transform:none;}
+
+  /* ---------- RESULT PANEL ---------- */
+  .result-empty{
+    color:var(--muted);font-size:14px;text-align:center;padding:40px 10px;
+    border:2px dashed var(--border);border-radius:14px;
+  }
+  .badge{
+    display:inline-flex;align-items:center;gap:7px;padding:6px 14px;border-radius:999px;
+    font-size:13px;font-weight:700;letter-spacing:.4px;
+  }
+  .badge.queja{background:var(--green-soft);color:var(--green);}
+  .badge.incidente{background:var(--red-soft);color:var(--red);}
+  .badge.demo{background:#fff4dc;color:var(--sol-dark);}
+
+  .banner{
+    border-radius:12px;padding:14px 16px;font-weight:700;font-size:14px;
+    display:flex;align-items:center;gap:10px;margin:14px 0;
+  }
+  .banner.ok{background:var(--green-soft);color:var(--green);border:1px solid #b8e8cd;}
+  .banner.warn{background:#fff4dc;color:var(--sol-dark);border:1px solid #f3d690;}
+
+  .resp-box{
+    background:#f7f9fd;border:1px solid var(--border);border-left:4px solid var(--indigo-soft);
+    border-radius:10px;padding:14px 16px;margin:14px 0;font-size:14px;
+  }
+  .resp-box .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:700;margin-bottom:5px;}
+
+  .steps{list-style:none;padding:0;margin:8px 0 0;counter-reset:s;}
+  .steps li{
+    counter-increment:s;position:relative;padding:9px 0 9px 38px;font-size:14px;
+    border-bottom:1px dashed var(--border);
+  }
+  .steps li:last-child{border-bottom:none;}
+  .steps li::before{
+    content:counter(s);position:absolute;left:0;top:7px;width:26px;height:26px;
+    background:var(--indigo);color:#fff;border-radius:50%;display:flex;align-items:center;
+    justify-content:center;font-size:13px;font-weight:700;
+  }
+
+  .meta-line{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;}
+  .chip{
+    background:#eef1fb;color:var(--indigo);border-radius:8px;padding:7px 12px;font-size:13px;font-weight:600;
+  }
+  .chip b{color:var(--sol-dark);}
+
+  /* ---------- STATUS PAGE ---------- */
+  .statuspage{margin-top:18px;background:#fbfcff;border:1px solid var(--border);border-radius:14px;padding:20px 18px 8px;}
+  .statuspage .sp-title{font-size:12px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);font-weight:700;margin-bottom:20px;}
+  .progress{display:flex;align-items:flex-start;position:relative;}
+  .progress .pstep{flex:1;text-align:center;position:relative;}
+  .progress .dot{
+    width:30px;height:30px;border-radius:50%;background:#dfe3ef;margin:0 auto 8px;
+    display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;font-weight:700;
+    position:relative;z-index:2;border:3px solid var(--bg);
+  }
+  .progress .pstep .lbl{font-size:13px;font-weight:600;color:var(--muted);}
+  .progress .pstep .sub{font-size:11px;color:#9aa1b2;}
+  /* connecting line */
+  .progress .pstep::after{
+    content:"";position:absolute;top:15px;left:50%;width:100%;height:3px;background:#dfe3ef;z-index:1;
+  }
+  .progress .pstep:last-child::after{display:none;}
+  .progress .pstep.done .dot{background:var(--green);}
+  .progress .pstep.done::after{background:var(--green);}
+  .progress .pstep.current .dot{background:var(--sol);box-shadow:0 0 0 5px rgba(245,166,35,.25);animation:pulse 1.6s infinite;}
+  .progress .pstep.current .lbl{color:var(--sol-dark);font-weight:800;}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 5px rgba(245,166,35,.25);}50%{box-shadow:0 0 0 9px rgba(245,166,35,.10);}}
+
+  /* ---------- INTERNAL VIEW ---------- */
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
+  @media(max-width:760px){.metrics{grid-template-columns:repeat(2,1fr);}}
+  .metric{
+    background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 20px;
+    box-shadow:var(--shadow-soft);position:relative;overflow:hidden;
+  }
+  .metric .num{font-size:34px;font-weight:800;line-height:1;}
+  .metric .lab{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700;margin-top:6px;}
+  .metric .ico{position:absolute;right:14px;top:14px;font-size:22px;opacity:.18;}
+  .metric.total .num{color:var(--indigo);}
+  .metric.quejas .num{color:var(--green);}
+  .metric.incidentes .num{color:var(--red);}
+  .metric.afectados .num{color:var(--sol-dark);}
+  .metric.total{border-top:3px solid var(--indigo);}
+  .metric.quejas{border-top:3px solid var(--green);}
+  .metric.incidentes{border-top:3px solid var(--red);}
+  .metric.afectados{border-top:3px solid var(--sol);}
+
+  .table-card{overflow:hidden;}
+  .table-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  thead th{
+    text-align:left;padding:11px 12px;background:var(--indigo);color:#fff;font-weight:600;font-size:12px;
+    text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;
+  }
+  thead th:first-child{border-top-left-radius:10px;}
+  thead th:last-child{border-top-right-radius:10px;}
+  tbody tr{border-bottom:1px solid var(--border);cursor:pointer;transition:.12s;}
+  tbody tr:hover{background:#f7f9fd;}
+  tbody td{padding:11px 12px;vertical-align:middle;}
+  tbody tr.r-incidente{background:rgba(214,69,65,.05);}
+  tbody tr.r-incidente:hover{background:rgba(214,69,65,.10);}
+  tbody tr.r-queja{background:rgba(31,157,99,.04);}
+  tbody tr.r-queja:hover{background:rgba(31,157,99,.09);}
+  .tipo-tag{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.3px;}
+  .tipo-tag.incidente{background:var(--red-soft);color:var(--red);}
+  .tipo-tag.queja{background:var(--green-soft);color:var(--green);}
+  .st-pill{font-size:11px;font-weight:700;padding:3px 9px;border-radius:6px;background:#eef1fb;color:var(--indigo);}
+  .caso-id{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:var(--indigo);font-weight:700;}
+  .expand-hint{font-size:11px;color:var(--muted);}
+
+  /* package row */
+  .pkg-row td{padding:0;background:#fbfcff;}
+  .pkg{padding:18px 22px;border-left:4px solid var(--red);margin:0;}
+  .pkg h4{margin:0 0 12px;color:var(--red);font-size:14px;display:flex;align-items:center;gap:8px;}
+  .pkg-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;}
+  @media(max-width:680px){.pkg-grid{grid-template-columns:1fr;}}
+  .pkg-item .k{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700;margin-bottom:3px;}
+  .pkg-item .v{font-size:13.5px;color:var(--text);}
+  .repro{background:#0f1530;color:#cdd6f4;border-radius:8px;padding:12px 14px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;white-space:pre-wrap;margin-top:4px;line-height:1.55;}
+  .sev{display:inline-block;padding:2px 9px;border-radius:6px;font-size:11px;font-weight:700;}
+  .sev.alta,.sev.critica,.sev.crítica{background:var(--red-soft);color:var(--red);}
+  .sev.media{background:#fff4dc;color:var(--sol-dark);}
+  .sev.baja{background:var(--green-soft);color:var(--green);}
+  .empty-table{text-align:center;color:var(--muted);padding:36px;font-size:14px;}
+
+  .footer-note{text-align:center;color:var(--muted);font-size:12px;margin:26px 0 6px;}
+  .footer-note code{background:#eef1fb;padding:2px 6px;border-radius:5px;color:var(--indigo);font-size:11.5px;}
+  .seed-btn{
+    background:#eef1fb;color:var(--indigo);border:1px solid var(--border);border-radius:9px;
+    padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s;
+  }
+  .seed-btn:hover{background:#e2e7fb;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="sol-mark"></div>
+    <div>
+      <h1>Sol<span>Uno</span></h1>
+      <p class="tagline">Un punto. Una respuesta. Todos los canales.</p>
+      <p class="sub">Sistema de gestión de incidencias · BancoSol · InnovaHack 2026</p>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button class="tab-btn active" data-view="cliente"><span class="ico">👤</span> Vista Cliente</button>
+  <button class="tab-btn" data-view="interno"><span class="ico">🏢</span> Vista Interna (Operador)</button>
+</nav>
+
+<main>
+
+  <!-- ============ VISTA CLIENTE ============ -->
+  <section id="view-cliente" class="view active">
+    <div class="grid2">
+
+      <!-- Formulario -->
+      <div class="card">
+        <h2>Reportá tu caso</h2>
+        <p class="hint">Un solo punto de contacto, sin importar por dónde llegues.</p>
+
+        <div class="row2">
+          <div class="field">
+            <label for="canal">Canal</label>
+            <select id="canal">
+              <option value="WhatsApp">WhatsApp</option>
+              <option value="Facebook">Facebook</option>
+              <option value="Instagram">Instagram</option>
+              <option value="altoke">altoke</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="producto">Producto</label>
+            <select id="producto">
+              <option value="altoke">altoke</option>
+              <option value="appSol">appSol</option>
+              <option value="Solnet">Solnet</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="agencia">Agencia</label>
+          <input id="agencia" type="text" placeholder="Ej. Plan 3000" value="Plan 3000">
+        </div>
+
+        <div class="field">
+          <label for="wa">📲 Tu WhatsApp (opcional — recibí la respuesta real)</label>
+          <input id="wa" type="text" placeholder="Ej. 59169176200">
+        </div>
+
+        <div class="field">
+          <label for="mensaje">Mensaje</label>
+          <textarea id="mensaje" placeholder="Contanos qué pasó. Ej: El QR no funciona, intento pagar y se queda cargando.">El QR de altoke no funciona, intento pagar y se queda cargando.</textarea>
+        </div>
+
+        <button class="btn" id="btnReportar">Reportar</button>
+        <p class="footer-note" style="margin-top:14px;">
+          Envía a <code>POST localhost:5678/webhook/soluno-reporte</code>
+        </p>
+      </div>
+
+      <!-- Resultado -->
+      <div class="card" id="resultCard">
+        <h2>Respuesta de SolUno</h2>
+        <p class="hint">Acá verás la resolución de tu caso en tiempo real.</p>
+        <div id="resultBody">
+          <div class="result-empty">Todavía no reportaste ningún caso.<br>Completá el formulario y presioná <b>Reportar</b>.</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ VISTA INTERNA ============ -->
+  <section id="view-interno" class="view">
+
+    <div class="metrics">
+      <div class="metric total">
+        <div class="ico">📋</div>
+        <div class="num" id="mTotal">0</div>
+        <div class="lab">Total de casos</div>
+      </div>
+      <div class="metric quejas">
+        <div class="ico">✅</div>
+        <div class="num" id="mQuejas">0</div>
+        <div class="lab">Quejas (autoservicio)</div>
+      </div>
+      <div class="metric incidentes">
+        <div class="ico">🚨</div>
+        <div class="num" id="mIncidentes">0</div>
+        <div class="lab">Incidentes a Desarrollo</div>
+      </div>
+      <div class="metric afectados">
+        <div class="ico">👥</div>
+        <div class="num" id="mAfectados">0</div>
+        <div class="lab">Clientes afectados</div>
+      </div>
+    </div>
+
+    <div class="card table-card">
+      <div class="table-head">
+        <div>
+          <h2 style="margin:0;">Bandeja unificada</h2>
+          <p class="hint" style="margin:2px 0 0;">Call Center + Desarrollo · clic en una fila para ver el detalle.</p>
+        </div>
+        <button class="seed-btn" id="btnSeed">+ Cargar caso de demo</button>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Caso ID</th><th>Tipo</th><th>Canal</th><th>Producto</th>
+            <th>Categoría</th><th>Estado</th><th>Afectados</th><th>Equipo asignado</th>
+          </tr>
+        </thead>
+        <tbody id="casosBody">
+          <tr><td colspan="8" class="empty-table">No hay casos reportados en esta sesión.<br>Reportá uno desde la <b>Vista Cliente</b> o cargá un caso de demo.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="footer-note">Los incidentes (rojo) se rutean como <b>Paquete para Desarrollo</b> · las quejas (verde) se resuelven por playbook.</p>
+  </section>
+
+</main>
+
+<script>
+/* ============================================================
+   SolUno — demo frontend (vanilla JS)
+   ============================================================ */
+
+const WEBHOOK_URL = "http://localhost:5678/webhook/soluno-reporte";
+const RESOLVER_URL = "http://localhost:5678/webhook/soluno-resolver";
+const WA_SEND_URL = "http://localhost:5678/webhook/test-wa";
+
+// Estado de sesión: todos los casos reportados
+const casos = [];
+let demoCounter = 0;
+
+/* ---------- TABS ---------- */
+document.querySelectorAll(".tab-btn").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+    document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("view-"+btn.dataset.view).classList.add("active");
+  });
+});
+
+/* ---------- HELPERS ---------- */
+function esc(s){
+  return String(s==null?"":s).replace(/[&<>"']/g,c=>(
+    {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+// Clasificación local simulada (fallback cuando n8n está apagado)
+function clasificarLocal(payload){
+  const txt = (payload.mensaje||"").toLowerCase();
+  const palabrasIncidente = ["qr","login","transfer","transferencia","ach","no funciona","caído","caido","error","se cae","no carga","no puedo"];
+  const esIncidente = palabrasIncidente.some(w=>txt.includes(w));
+  demoCounter++;
+
+  if(esIncidente){
+    const afectados = 40 + Math.floor(Math.random()*180);
+    return {
+      resultado:"INCIDENTE",
+      caso_id:"INC-"+String(1000+demoCounter),
+      estado:"En análisis",
+      afectados:afectados,
+      canal:payload.canal,
+      producto:payload.producto,
+      categoria:"Falla transaccional / "+(txt.includes("qr")?"QR":txt.includes("login")?"Login":txt.includes("transfer")?"Transferencia":"Servicio crítico"),
+      respuesta_cliente:"Recibimos tu reporte y detectamos una falla que afecta a varios clientes. Nuestro equipo técnico ya está trabajando en ello. Te avisaremos en cuanto se resuelva.",
+      paquete_para_desarrollo:{
+        que_falla: payload.mensaje,
+        producto: payload.producto,
+        severidad:"Alta",
+        afectados:afectados,
+        equipo_asignado:"Equipo Pagos / Core "+payload.producto,
+        datos_para_reproducir:
+          "canal: "+payload.canal+"\n"+
+          "producto: "+payload.producto+"\n"+
+          "agencia: "+payload.agencia+"\n"+
+          "cliente: usuario_1 (tokenizado)\n"+
+          "pasos: 1) abrir "+payload.producto+" 2) iniciar pago QR 3) la operación queda cargando >30s\n"+
+          "timestamp: "+new Date().toISOString(),
+        estado:"En análisis"
+      }
+    };
+  }else{
+    return {
+      resultado:"QUEJA",
+      caso_id:"QJ-"+String(2000+demoCounter),
+      producto:payload.producto,
+      categoria:"Consulta / Configuración",
+      canal:payload.canal,
+      estado:"Resuelto",
+      respuesta_cliente:"¡Listo! Tu consulta se resuelve siguiendo estos pasos. Si el problema persiste, escribinos de nuevo y lo escalamos.",
+      pasos:[
+        "Abrí "+payload.producto+" y entrá a Configuración › Seguridad.",
+        "Seleccioná 'Reactivar dispositivo / token'.",
+        "Confirmá con el código que llega a tu número registrado.",
+        "Volvé a intentar la operación; ya debería funcionar."
+      ]
+    };
+  }
+}
+
+// Recalcula y devuelve métricas a partir del array local
+function calcularMetricas(){
+  const total = casos.length;
+  const quejas = casos.filter(c=>c.resultado==="QUEJA").length;
+  const incidentes = casos.filter(c=>c.resultado==="INCIDENTE").length;
+  return {total,quejas,incidentes};
+}
+
+/* ---------- RENDER: respuesta cliente ---------- */
+function renderRespuestaCliente(data, simulado){
+  const body = document.getElementById("resultBody");
+
+  if(data.resultado==="QUEJA"){
+    const pasos = Array.isArray(data.pasos)?data.pasos:[];
+    body.innerHTML = `
+      <span class="badge queja">✔ QUEJA · Autoservicio</span>
+      ${simulado?'<span class="badge demo" style="margin-left:8px;">⚠ datos simulados (n8n offline)</span>':''}
+      <div class="banner ok">✅ Resuelto por autoservicio</div>
+      <div class="resp-box">
+        <div class="lbl">Respuesta para el cliente</div>
+        ${esc(data.respuesta_cliente)}
+      </div>
+      <div class="resp-box" style="border-left-color:var(--sol);">
+        <div class="lbl">Pasos a seguir</div>
+        <ol class="steps">${pasos.map(p=>`<li>${esc(p)}</li>`).join("")}</ol>
+      </div>
+      <div class="meta-line">
+        <span class="chip">Caso: <b>${esc(data.caso_id)}</b></span>
+        <span class="chip">Producto: <b>${esc(data.producto)}</b></span>
+        <span class="chip">Canal: <b>${esc(data.canal)}</b></span>
+        <span class="chip">Categoría: <b>${esc(data.categoria)}</b></span>
+      </div>`;
+  }
+  else if(data.resultado==="INCIDENTE"){
+    const estados = ["Recibido","En análisis","Resuelto"];
+    // estado actual: el que devuelve el webhook, default "En análisis"
+    const actual = data.estado || "En análisis";
+    let idxActual = estados.indexOf(actual);
+    if(idxActual<0) idxActual = 1;
+
+    const progreso = estados.map((e,i)=>{
+      let cls = "";
+      if(i<idxActual) cls="done";
+      else if(i===idxActual) cls="current";
+      const icon = i<idxActual ? "✓" : (i===idxActual ? "●" : (i+1));
+      const sub = i===0?"Tu reporte llegó":i===1?"El equipo trabaja":"Solución publicada";
+      return `<div class="pstep ${cls}">
+                <div class="dot">${icon}</div>
+                <div class="lbl">${e}</div>
+                <div class="sub">${sub}</div>
+              </div>`;
+    }).join("");
+
+    body.innerHTML = `
+      <span class="badge incidente">🚨 INCIDENTE · Ruteado a Desarrollo</span>
+      ${simulado?'<span class="badge demo" style="margin-left:8px;">⚠ datos simulados (n8n offline)</span>':''}
+      <div class="resp-box">
+        <div class="lbl">Respuesta para el cliente</div>
+        ${esc(data.respuesta_cliente)}
+      </div>
+      <div class="statuspage">
+        <div class="sp-title">Estado de tu caso · ${esc(data.caso_id)}</div>
+        <div class="progress">${progreso}</div>
+      </div>
+      <div class="meta-line">
+        <span class="chip">Caso: <b>${esc(data.caso_id)}</b></span>
+        <span class="chip">Estado: <b>${esc(actual)}</b></span>
+        <span class="chip">Clientes afectados: <b>${esc(data.afectados)}</b></span>
+      </div>`;
+  }
+}
+
+/* ---------- RENDER: vista interna ---------- */
+function renderInterno(){
+  const m = calcularMetricas();
+  document.getElementById("mTotal").textContent = m.total;
+  document.getElementById("mQuejas").textContent = m.quejas;
+  document.getElementById("mIncidentes").textContent = m.incidentes;
+  const afectados = casos.filter(c=>c.resultado==="INCIDENTE")
+                         .reduce((s,c)=>s+(parseInt(c.afectados)||0),0);
+  document.getElementById("mAfectados").textContent = afectados;
+
+  const tbody = document.getElementById("casosBody");
+  if(casos.length===0){
+    tbody.innerHTML = `<tr><td colspan="8" class="empty-table">No hay casos reportados en esta sesión.<br>Reportá uno desde la <b>Vista Cliente</b> o cargá un caso de demo.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = casos.map((c,i)=>{
+    const esInc = c.resultado==="INCIDENTE";
+    const tipo = esInc?"Incidente":"Queja";
+    const equipo = esInc ? (c.paquete_para_desarrollo?.equipo_asignado||"Desarrollo") : "Call Center / Playbook";
+    const afectados = esInc ? (c.afectados!=null?c.afectados:"—") : "—";
+    let pkgRow = "";
+    if(esInc && c.paquete_para_desarrollo){
+      const p = c.paquete_para_desarrollo;
+      const sevClass = (p.severidad||"").toLowerCase();
+      pkgRow = `
+      <tr class="pkg-row" id="pkg-${i}" style="display:none;">
+        <td colspan="8">
+          <div class="pkg">
+            <h4>📦 Paquete para Desarrollo</h4>
+            <div class="pkg-grid">
+              <div class="pkg-item"><div class="k">¿Qué falla?</div><div class="v">${esc(p.que_falla)}</div></div>
+              <div class="pkg-item"><div class="k">Producto</div><div class="v">${esc(p.producto)}</div></div>
+              <div class="pkg-item"><div class="k">Severidad</div><div class="v"><span class="sev ${esc(sevClass)}">${esc(p.severidad)}</span></div></div>
+              <div class="pkg-item"><div class="k">Afectados</div><div class="v"><b>${esc(p.afectados)}</b> clientes</div></div>
+              <div class="pkg-item"><div class="k">Equipo asignado</div><div class="v">${esc(p.equipo_asignado)}</div></div>
+              <div class="pkg-item"><div class="k">Estado</div><div class="v">${esc(p.estado||c.estado)}</div></div>
+            </div>
+            <div class="pkg-item" style="margin-top:14px;">
+              <div class="k">Datos para reproducir (tokenizados · sin PII)</div>
+              <div class="repro">${esc(p.datos_para_reproducir)}</div>
+            </div>
+            <div style="margin-top:16px;border-top:1px dashed var(--border);padding-top:14px;">
+              <div class="k" style="color:var(--green);margin-bottom:8px;">✓ Resolver incidente (equipo técnico) → cierra el ciclo</div>
+              <textarea id="sol-${i}" placeholder="Describí la solución aplicada. Ej: Se reinició el nodo de pagos QR. Se limpió la cola de transacciones. Se validó con una prueba. Se monitorea 1 hora."></textarea>
+              <div style="display:flex;gap:10px;margin-top:10px;align-items:center;flex-wrap:wrap;">
+                <input id="dur-${i}" type="number" placeholder="Duración (min)" style="width:160px;">
+                <button class="btn" style="width:auto;background:linear-gradient(135deg,var(--green) 0%,#147a4b 100%);color:#fff;box-shadow:0 4px 14px rgba(31,157,99,.3);" onclick="resolverIncidente(${i})">✓ Cerrar incidente y publicar al Playbook</button>
+              </div>
+              <div id="resol-${i}"></div>
+            </div>
+          </div>
+        </td>
+      </tr>`;
+    }
+    return `
+      <tr class="r-${esInc?'incidente':'queja'}" onclick="toggleRow(${i})">
+        <td><span class="caso-id">${esc(c.caso_id)}</span></td>
+        <td><span class="tipo-tag ${esInc?'incidente':'queja'}">${tipo}</span></td>
+        <td>${esc(c.canal)}</td>
+        <td>${esc(c.producto)}</td>
+        <td>${esc(c.categoria||"—")}</td>
+        <td><span class="st-pill" id="st-${i}">${esc(c.estado||"—")}</span></td>
+        <td>${esc(afectados)}</td>
+        <td>${esc(equipo)} ${esInc?'<span class="expand-hint">▾</span>':''}</td>
+      </tr>${pkgRow}`;
+  }).join("");
+}
+
+function toggleRow(i){
+  const row = document.getElementById("pkg-"+i);
+  if(row) row.style.display = (row.style.display==="none"?"table-row":"none");
+}
+
+/* ---------- CIERRE DEL CICLO: resolver incidente ---------- */
+function resolverLocal(payload){
+  const pasos = (payload.solucion||"").split(/[\n.;]+/).map(s=>s.trim()).filter(s=>s.length>3).map((s,i)=>(i+1)+". "+s.charAt(0).toUpperCase()+s.slice(1));
+  return {
+    resultado:"CICLO CERRADO", caso_id:payload.caso_id,
+    playbook:{ clave:payload.producto+"|"+payload.categoria, version:1, pasos, estado:"creado (v1)" },
+    informe_asfi:{
+      numero:"ASFI-"+(payload.caso_id||"").replace("INC-","")+"-SIM",
+      que_paso:"Incidente "+payload.caso_id+" de tipo "+payload.categoria+" en "+payload.producto+", con "+payload.afectados+" afectado(s).",
+      como_se_resolvio:payload.solucion,
+      estado:"BORRADOR — pendiente de aprobación humana"
+    }
+  };
+}
+
+function renderResolucion(div, data, simulado){
+  const pb = data.playbook||{};
+  const inf = data.informe_asfi||{};
+  const pasos = Array.isArray(pb.pasos)?pb.pasos:[];
+  div.innerHTML = `
+    <div class="banner ok" style="margin-top:14px;">✅ Incidente cerrado · Ciclo completo
+      ${simulado?'<span class="badge demo" style="margin-left:8px;">⚠ simulado (n8n offline)</span>':''}</div>
+    <div class="resp-box" style="border-left-color:var(--green);">
+      <div class="lbl">📘 Playbook Vivo — ${esc(pb.estado||'actualizado')}</div>
+      <ol class="steps">${pasos.map(p=>`<li>${esc(String(p).replace(/^\d+\.\s*/,''))}</li>`).join("")}</ol>
+    </div>
+    <div class="resp-box" style="border-left-color:var(--sol);">
+      <div class="lbl">📄 Borrador de informe ASFI · ${esc(inf.numero||'')}</div>
+      <div><b>Qué pasó:</b> ${esc(inf.que_paso||'')}</div>
+      <div style="margin-top:6px;"><b>Cómo se resolvió:</b> ${esc(inf.como_se_resolvio||'')}</div>
+      <div style="margin-top:6px;"><b>Estado:</b> ${esc(inf.estado||'')}</div>
+    </div>`;
+}
+
+async function resolverIncidente(i){
+  const c = casos[i];
+  if(!c) return;
+  const solEl = document.getElementById("sol-"+i);
+  const durEl = document.getElementById("dur-"+i);
+  const resDiv = document.getElementById("resol-"+i);
+  const solucion = (solEl && solEl.value || "").trim();
+  if(!solucion){ resDiv.innerHTML = '<div class="banner warn">Escribí la solución aplicada antes de cerrar el incidente.</div>'; return; }
+
+  const payload = {
+    caso_id: c.caso_id,
+    producto: c.producto,
+    categoria: c.categoria || "general",
+    severidad: (c.paquete_para_desarrollo && c.paquete_para_desarrollo.severidad) || "alta",
+    afectados: c.afectados != null ? c.afectados : ((c.paquete_para_desarrollo && c.paquete_para_desarrollo.afectados) || 0),
+    duracion_min: parseInt(durEl && durEl.value) || null,
+    solucion: solucion
+  };
+
+  resDiv.innerHTML = '<div class="banner warn">Cerrando incidente y publicando al Playbook...</div>';
+
+  let data=null, simulado=false;
+  try{
+    const res = await fetch(RESOLVER_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    data = await res.json();
+    if(Array.isArray(data)) data = data[0];
+    if(!data || !data.informe_asfi) throw new Error("respuesta sin informe");
+  }catch(err){
+    simulado = true;
+    data = resolverLocal(payload);
+    console.warn("Resolver no disponible, simulando:", err.message);
+  }
+
+  // Actualizar estado del caso (sin re-render para no cerrar el panel)
+  c.estado = "Resuelto";
+  if(c.paquete_para_desarrollo) c.paquete_para_desarrollo.estado = "Resuelto";
+  const pill = document.getElementById("st-"+i);
+  if(pill){ pill.textContent = "Resuelto"; pill.style.background = "var(--green-soft)"; pill.style.color = "var(--green)"; }
+
+  renderResolucion(resDiv, data, simulado);
+}
+
+/* ---------- AGREGAR CASO al estado ---------- */
+function agregarCaso(data){
+  casos.push(data);
+  renderInterno();
+}
+
+/* ---------- ENVÍO ---------- */
+const btn = document.getElementById("btnReportar");
+btn.addEventListener("click", async ()=>{
+  const payload = {
+    canal: document.getElementById("canal").value,
+    producto: document.getElementById("producto").value,
+    agencia: document.getElementById("agencia").value,
+    mensaje: document.getElementById("mensaje").value,
+    cliente: { nombre:"Cliente Demo", ci:"0000000" }
+  };
+
+  btn.disabled = true;
+  btn.textContent = "Enviando...";
+
+  let data = null;
+  let simulado = false;
+
+  try{
+    const res = await fetch(WEBHOOK_URL,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(payload)
+    });
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    data = await res.json();
+    // n8n a veces devuelve un array → tomar el primer elemento
+    if(Array.isArray(data)) data = data[0];
+    if(!data || !data.resultado) throw new Error("Respuesta sin 'resultado'");
+  }catch(err){
+    // Fallback: n8n apagado o error → simulamos para que el demo siga
+    simulado = true;
+    data = clasificarLocal(payload);
+    console.warn("Webhook no disponible, usando datos simulados:", err.message);
+  }
+
+  // Asegurar campos básicos por si el webhook no los manda
+  data.canal = data.canal || payload.canal;
+  data.producto = data.producto || payload.producto;
+
+  renderRespuestaCliente(data, simulado);
+  agregarCaso(data);
+
+  // Enviar la respuesta de SolUno al WhatsApp real del cliente (si puso numero)
+  const waNum = (document.getElementById("wa").value || "").trim().replace(/[^0-9]/g, "");
+  if(waNum && data.respuesta_cliente){
+    try{
+      await fetch(WA_SEND_URL, { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ to: waNum, text: data.respuesta_cliente }) });
+      const okb = document.createElement("div");
+      okb.className = "banner ok";
+      okb.innerHTML = "📲 Respuesta enviada a tu WhatsApp (+" + esc(waNum) + ")";
+      document.getElementById("resultBody").appendChild(okb);
+    }catch(e){ console.warn("wa send fail", e); }
+  }
+
+  // Aviso de fallback en el panel de resultado (encima)
+  if(simulado){
+    const body = document.getElementById("resultBody");
+    const warn = document.createElement("div");
+    warn.className = "banner warn";
+    warn.innerHTML = "⚠ No se pudo conectar con n8n (localhost:5678). Mostrando resultado simulado para continuar el demo.";
+    body.insertBefore(warn, body.firstChild);
+  }
+
+  btn.disabled = false;
+  btn.textContent = "Reportar";
+});
+
+/* ---------- CASO DE DEMO (seed) ---------- */
+document.getElementById("btnSeed").addEventListener("click",()=>{
+  // Alterna entre un incidente y una queja para poblar la bandeja
+  const ejemplos = [
+    {canal:"WhatsApp", producto:"altoke", agencia:"Plan 3000", mensaje:"El QR no funciona, no puedo cobrar."},
+    {canal:"Instagram", producto:"appSol", agencia:"Centro", mensaje:"No me llega el código para cambiar de dispositivo."},
+    {canal:"altoke", producto:"altoke", agencia:"El Alto", mensaje:"La transferencia ACH da error."}
+  ];
+  const ej = ejemplos[casos.length % ejemplos.length];
+  const data = clasificarLocal(ej);
+  data.canal = ej.canal;
+  agregarCaso(data);
+});
+
+// Render inicial
+renderInterno();
+</script>
+</body>
+</html>

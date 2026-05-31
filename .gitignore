@@ -1,0 +1,36 @@
+# ===== Secretos / entorno (NUNCA subir claves reales) =====
+.env
+.env.*
+!.env.example
+*.local
+ngrok.yml
+
+# ===== Dependencias =====
+node_modules/
+
+# ===== Logs / temporales =====
+_*.txt
+*.log
+*.tmp
+
+# ===== Datos generados en tiempo de ejecucion =====
+app/informes/*.txt
+
+# ===== Medios pesados (no necesarios para correr) =====
+*.m4a
+*.mp3
+*.wav
+
+# ===== Materiales de origen de terceros (no redistribuir) =====
+INNOVAHACK2026_GuiaRapida_Consuelo*.pdf
+TDRequipos*.pdf
+FEAFR.pdf
+BancoSol problema.pdf
+audio nuevo.pdf
+*.xlsm
+*.xlsx
+*_transcripcion.txt
+
+# ===== Sistema operativo =====
+.DS_Store
+Thumbs.db

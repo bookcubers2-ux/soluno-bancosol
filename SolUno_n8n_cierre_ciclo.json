@@ -1,0 +1,64 @@
+{
+  "id": "soluno-resol",
+  "name": "SolUno - Cierre del Ciclo (Resolver + Playbook + ASFI)",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": { "content": "## Cierre del Ciclo\n\nEl equipo resuelve el incidente y manda la solucion.\nSolUno:\n1. Convierte la solucion en pasos\n2. La publica al Playbook Vivo (versionado)\n3. Genera el borrador de informe ASFI\n\nPOST a /webhook/soluno-resolver con:\n{caso_id, producto, categoria, severidad, afectados, duracion_min, solucion}", "height": 280, "width": 360 },
+      "id": "nota-cierre",
+      "name": "Notas",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-200, 40]
+    },
+    {
+      "parameters": { "httpMethod": "POST", "path": "soluno-resolver", "responseMode": "responseNode", "options": {} },
+      "id": "wh-resolver",
+      "name": "Resolver (Dev)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [260, 320],
+      "webhookId": "soluno-resolver"
+    },
+    {
+      "parameters": { "jsCode": "// === 1. CONVERTIR LA SOLUCION DEL DEV EN PASOS ===\n// (Luego Claude lo redacta mejor; aqui partimos por frases.)\nconst j = $input.item.json.body || $input.item.json;\nconst sol = (j.solucion || '').toString().trim();\nlet pasos = sol.split(/[\\n.;]+/).map(s => s.trim()).filter(s => s.length > 3).map((s, i) => (i + 1) + '. ' + s.charAt(0).toUpperCase() + s.slice(1));\nif (pasos.length === 0) pasos = ['1. ' + (sol || 'Sin detalle de solución')];\nreturn { json: { caso_id: j.caso_id || 'INC-?', producto: j.producto || 'desconocido', categoria: j.categoria || 'general', severidad: j.severidad || 'alta', afectados: j.afectados || 0, duracion_min: j.duracion_min || null, solucion_original: sol, pasos } };" },
+      "id": "convertir",
+      "name": "Convertir en Pasos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 320]
+    },
+    {
+      "parameters": { "jsCode": "// === 2. PUBLICAR AL PLAYBOOK VIVO (versionado) ===\nconst j = $input.item.json;\nconst sd = $getWorkflowStaticData('global');\nsd.playbook = sd.playbook || {};\nconst clave = (j.producto || 'x') + '|' + (j.categoria || 'general');\nconst prev = sd.playbook[clave];\nconst version = prev ? prev.version + 1 : 1;\nconst respuesta = 'Para este caso: ' + j.pasos.join(' ');\nsd.playbook[clave] = { version, pasos: j.pasos, respuesta, actualizado: new Date().toISOString(), caso_id: j.caso_id };\nreturn { json: { ...j, playbook: { clave, version, pasos: j.pasos, respuesta, estado: version > 1 ? 'actualizado (v' + version + ')' : 'creado (v1)' } } };" },
+      "id": "publicar",
+      "name": "Publicar al Playbook",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [700, 320]
+    },
+    {
+      "parameters": { "jsCode": "// === 3. GENERAR BORRADOR DE INFORME ASFI (post-mortem) ===\nconst j = $input.item.json;\nconst fecha = new Date().toISOString().slice(0, 10);\nconst informe = {\n  numero: 'ASFI-' + (j.caso_id || '').replace('INC-', '') + '-' + fecha.replace(/-/g, ''),\n  fecha,\n  tipo_incidente: (j.categoria || 'general') + ' en ' + (j.producto || 'desconocido'),\n  severidad: j.severidad,\n  clientes_afectados: j.afectados,\n  duracion_minutos: j.duracion_min,\n  que_paso: 'Incidente ' + j.caso_id + ' de tipo ' + j.categoria + ' en el producto ' + j.producto + ', severidad ' + j.severidad + ', con ' + j.afectados + ' cliente(s) afectado(s).',\n  como_se_resolvio: j.solucion_original,\n  acciones_preventivas: j.pasos,\n  estado: 'BORRADOR — pendiente de aprobación humana'\n};\nreturn { json: { resultado: 'CICLO CERRADO', caso_id: j.caso_id, playbook: j.playbook, informe_asfi: informe, mensaje: 'Solución publicada al Playbook ' + j.playbook.estado + ' y borrador de informe ASFI generado (' + informe.numero + ').' } };" },
+      "id": "informe",
+      "name": "Generar Informe ASFI",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [920, 320]
+    },
+    {
+      "parameters": { "options": {} },
+      "id": "respond-resol",
+      "name": "Responder",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1140, 320]
+    }
+  ],
+  "connections": {
+    "Resolver (Dev)": { "main": [[{ "node": "Convertir en Pasos", "type": "main", "index": 0 }]] },
+    "Convertir en Pasos": { "main": [[{ "node": "Publicar al Playbook", "type": "main", "index": 0 }]] },
+    "Publicar al Playbook": { "main": [[{ "node": "Generar Informe ASFI", "type": "main", "index": 0 }]] },
+    "Generar Informe ASFI": { "main": [[{ "node": "Responder", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "pinData": {}
+}
