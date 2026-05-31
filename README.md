@@ -68,7 +68,13 @@ Un agente conversacional + una consola de operaciones que, por cada mensaje de W
 
 📄 **Archivo del workflow:** [`SolUno_n8n_sistema.json`](SolUno_n8n_sistema.json) — se puede **importar en cualquier n8n** (menú *Import from File*) para verlo y ejecutarlo.
 
-Este es el flujo completo que orquesta n8n con cada mensaje:
+### Vista real del workflow en n8n
+
+![Workflow de n8n — SolUno](n8n_workflow.png)
+
+> Arriba: el flujo principal (clasificación + IA + enrutado a equipos + respuesta). Abajo: el **cierre del ciclo** (resolver → playbook vivo → informe ASFI).
+
+### Diagrama simplificado del flujo
 
 ```mermaid
 flowchart TD
