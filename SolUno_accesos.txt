@@ -1,0 +1,40 @@
+============================================================
+  SolUno · Atención al cliente con IA para BancoSol
+  InnovaHack 2026 — Accesos del proyecto
+============================================================
+
+QUÉ ES
+SolUno es un agente de IA que atiende a los clientes de BancoSol por WhatsApp:
+resuelve solo los problemas simples (paso a paso) y deriva los problemas grandes
+al equipo de TI correcto. Está orquestado con n8n y tiene una consola web para el
+equipo de soporte, con catálogo de soluciones (playbooks) e informes para ASFI.
+
+------------------------------------------------------------
+  LINKS
+------------------------------------------------------------
+
+1) APP EN VIVO (probar como técnico de soporte)
+   https://security-affair-untrimmed.ngrok-free.dev
+   (Al entrar, hacer clic una vez en el botón azul "Visit Site".)
+
+2) WORKFLOW DE n8n (flujo de automatización, con imagen del flujo real)
+   https://github.com/bookcubers2-ux/soluno-bancosol#-workflow-de-n8n-flujo-de-automatización
+
+3) INFORME DEL PROYECTO (PDF)
+   https://github.com/bookcubers2-ux/soluno-bancosol/blob/main/SolUno_Informe.pdf
+
+4) INFORME DEL PROYECTO (Word)
+   https://github.com/bookcubers2-ux/soluno-bancosol/blob/main/SolUno_Informe.docx
+
+5) CÓDIGO Y DOCUMENTACIÓN COMPLETA (repositorio)
+   https://github.com/bookcubers2-ux/soluno-bancosol
+
+------------------------------------------------------------
+  CÓMO USARLO
+------------------------------------------------------------
+- Con un solo link (el repositorio, #5) ya se accede a todo: el código, el
+  informe, el workflow y el acceso a la app en vivo.
+- La APP EN VIVO funciona mientras el equipo mantiene el entorno encendido
+  durante la evaluación.
+
+============================================================
