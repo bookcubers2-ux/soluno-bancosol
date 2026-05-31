@@ -9,6 +9,7 @@
 | | Link |
 |---|---|
 | 🖥️ **Probar la APP EN VIVO** (entrá como si fueras el técnico de soporte) | **https://security-affair-untrimmed.ngrok-free.dev** |
+| 🔁 **Workflow de n8n** (flujo de automatización, con diagrama) | [SolUno_n8n_sistema.json](SolUno_n8n_sistema.json) · ver [diagrama](#-workflow-de-n8n-flujo-de-automatización) |
 | 📦 **Código y documentación** (este repositorio) | https://github.com/bookcubers2-ux/soluno-bancosol |
 
 > ℹ️ Al abrir la app en vivo, el navegador muestra **una vez** un aviso de ngrok: hacé clic en el botón **"Visit Site"** y entrás a la consola. *(La demo en vivo está disponible durante el período de evaluación, mientras el equipo mantiene el entorno activo.)*
@@ -60,6 +61,46 @@ Un agente conversacional + una consola de operaciones que, por cada mensaje de W
 
 - **Privacidad:** los datos personales se **tokenizan** antes de enviarse a la IA.
 - **Sin secretos en el código:** todas las claves se leen de variables de entorno (`$env` en n8n, `process.env` en el backend).
+
+---
+
+## 🔁 Workflow de n8n (flujo de automatización)
+
+📄 **Archivo del workflow:** [`SolUno_n8n_sistema.json`](SolUno_n8n_sistema.json) — se puede **importar en cualquier n8n** (menú *Import from File*) para verlo y ejecutarlo.
+
+Este es el flujo completo que orquesta n8n con cada mensaje:
+
+```mermaid
+flowchart TD
+  A([Cliente por WhatsApp]) --> B{Triggers<br/>Meta · Demo}
+  B --> C[Normalizar mensaje]
+  C --> D[Tokenizar PII]
+  D --> E[Clasificar IA · Groq<br/>llama-3.3-70b]
+  E --> F[Interpretar clasificacion]
+  F --> G[Agrupar por causa raiz<br/>y contar afectados]
+  G --> H{Es incidente?}
+  H -- No: queja / consulta --> I[Respuesta Queja<br/>Playbook vivo]
+  H -- Si --> J[Paquete Incidente<br/>+ severidad]
+  J --> K{Enrutar a equipo}
+  K --> K1[Equipo Pagos/QR]
+  K --> K2[Seguridad/Accesos]
+  K --> K3[DevOps Aplicaciones]
+  K --> K4[Infraestructura/TI]
+  K --> K5[Mesa de Incidentes TI]
+  K1 --> L[Registrar estado y metricas]
+  K2 --> L
+  K3 --> L
+  K4 --> L
+  K5 --> L
+  I --> L
+  L --> M[Generar respuesta IA<br/>cliente enumerado + recomendacion tecnica]
+  M --> N[Aplicar respuesta IA]
+  N --> O{Origen demo?}
+  O -- Demo --> P([Responder a la consola])
+  O -- WhatsApp --> Q([Enviar por WhatsApp · Meta])
+```
+
+> El workflow `SolUno_n8n_watest.json` se encarga del **envío de mensajes a la WhatsApp Cloud API** (texto, botones, plantillas).
 
 ---
 
